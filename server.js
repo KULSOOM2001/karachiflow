@@ -23,7 +23,7 @@ app.get('/zones', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pag
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html')));
 
 // MongoDB connect
-const MONGO_URI = process.env.MONGO_URI;
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/karachiflow';
 
 mongoose.connect(MONGO_URI)
   .then(() => {
