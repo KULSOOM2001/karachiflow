@@ -23,7 +23,7 @@ app.get('/zones', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pag
 app.get('/admin', (req, res) => res.sendFile(path.join(__dirname, 'public', 'pages', 'admin.html')));
 
 // MongoDB connect
-const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://karachiflow:Karachi123@cluster0.loncnzp.mongodb.net/karachiflow?retryWrites=true&w=majority&appName=Cluster0';
+const MONGO_URI = process.env.MONGO_URI || 'mongodb+srv://karachiflow:KarachiFlow2026!@cluster0.loncnzp.mongodb.net/karachiflow?retryWrites=true&w=majority&appName=Cluster0';
 
 mongoose.connect(MONGO_URI)
   .then(() => {
