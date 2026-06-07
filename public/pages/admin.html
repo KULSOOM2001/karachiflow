@@ -247,11 +247,12 @@
             <td style="color:var(--text3)">${timeAgo(r.createdAt)}</td>
             <td>
               <div class="action-btns">
-                ${r.status !== 'resolved' ? `
-                  <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')">✅</button>
-                  <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')">🚨</button>
-                  <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')">📢</button>
-                ` : `<span style="color:var(--text3);font-size:12px">—</span>`}
+               ${r.status !== 'resolved' ? `
+               <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')">✅</button>
+               <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')">🚨</button>
+               <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')">📢</button>
+               ` : `<span style="color:var(--text3);font-size:12px">—</span>`}
+               <button class="btn btn-sm" style="background:#ff2d55;color:white;padding:4px 8px" onclick="deleteReport('${r._id}')">🗑️</button>
               </div>
             </td>
           </tr>

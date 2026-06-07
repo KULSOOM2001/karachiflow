@@ -15,7 +15,7 @@ function validateId(req, res, next) {
 // GET all active reports (optionally filter by zone)
 router.get('/', async (req, res) => {
   try {
-    const filter = { status: { $ne: 'resolved' } };
+    const filter = {};
     if (req.query.zone) filter.zone = req.query.zone;
     if (req.query.type) filter.type = req.query.type;
     const reports = await Report.find(filter).sort({ votes: -1, createdAt: -1 }).limit(50);
