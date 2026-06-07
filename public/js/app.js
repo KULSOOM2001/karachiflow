@@ -181,9 +181,6 @@ function renderReportCard(r, showAdminControls = false) {
   const status = STATUS_LABELS[r.status] || STATUS_LABELS.active;
   const voted = hasVoted(r._id);
   const sev = severityClass(r.votes);
-// ✅ ADD THIS: Check if citizen can vote (same zone)
-  const citizenZone = sessionStorage.getItem('kf_citizen_zone');
-  const canVote = !citizenZone || citizenZone === r.zone;
 
   return `
     <div class="report-card ${sev}" data-id="${r._id}">
