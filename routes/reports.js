@@ -113,7 +113,8 @@ router.get('/admin/all', async (req, res) => {
   }
 });
 // DELETE report
-router.delete('/:id', validateId, async (req, res) => {
+// DELETE report
+router.delete('/:id', async (req, res) => {
   try {
     const report = await Report.findByIdAndDelete(req.params.id);
     if (!report) return res.status(404).json({ success: false, error: 'Not found' });
