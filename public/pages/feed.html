@@ -96,6 +96,25 @@
     document.getElementById('nav-placeholder').innerHTML = buildNav('feed');
     initLangToggle();
 
+    // Zone filter auto-apply
+const citizenZone = sessionStorage.getItem('kf_citizen_zone');
+
+// Agar zone selected hai, filter button add karo
+if (citizenZone) {
+  const filterBar = document.querySelector('.filter-bar');
+  if (filterBar) {
+    const zoneBtn = document.createElement('button');
+    zoneBtn.className = 'filter-btn active';
+    zoneBtn.style.cssText = 'background:rgba(61,220,132,0.1);border-color:rgba(61,220,132,0.3);color:#3ddc84';
+    zoneBtn.textContent = '📍 ' + citizenZone;
+    zoneBtn.onclick = function() {
+      sessionStorage.removeItem('kf_citizen_zone');
+      window.location.href = '/';
+    };
+    filterBar.insertBefore(zoneBtn, filterBar.firstChild);
+  }
+}
+
     let currentFilter = 'all';
     let priorityFilter = false;
     let allReports = [];

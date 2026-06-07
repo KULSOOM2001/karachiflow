@@ -147,6 +147,9 @@ function initLangToggle() {
 }
 
 function buildNav(active) {
+  const zone = sessionStorage.getItem('kf_citizen_zone');
+  const zoneBadge = zone ? `<span style="background:rgba(61,220,132,0.1);color:#3ddc84;padding:4px 10px;border-radius:12px;font-size:11px;margin-left:8px">📍 ${zone}</span>` : '';
+  
   return `
     <nav>
       <a href="/" class="nav-logo">
@@ -155,7 +158,7 @@ function buildNav(active) {
       </a>
       <ul class="nav-links">
         <li><a href="/" ${active==='home'?'class="active"':''}>🏠 Home</a></li>
-        <li><a href="/feed" ${active==='feed'?'class="active"':''}>📡 Live Feed</a></li>
+        <li><a href="/feed" ${active==='feed'?'class="active"':''}>📡 Live Feed</a>${zoneBadge}</li>
         <li><a href="/zones" ${active==='zones'?'class="active"':''}>🗺️ Zones</a></li>
         <li><a href="/report" ${active==='report'?'class="active"':''}>➕ Report</a></li>
         ${active==='admin' ? `<li><a href="/admin" class="active">⚙️ Admin</a></li>` : ''}
