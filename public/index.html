@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KarachiFlow — Real-Time Utility Crisis Tracker</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .hero { padding: 100px 24px 80px; }
+    .feature-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 16px;
+      margin: 48px 0;
+    }
+    .feature-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      transition: all 0.25s;
+    }
+    .feature-card:hover {
+      border-color: var(--border2);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .feature-icon {
+      font-size: 28px;
+      margin-bottom: 14px;
+      display: block;
+    }
+    .feature-title {
+      font-family: var(--font-display);
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text2);
+      line-height: 1.6;
+    }
+    .recent-section {
+      padding: 60px 0;
+      border-top: 1px solid var(--border);
+    }
+    .section-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+    }
+    .section-heading {
+      font-family: var(--font-display);
+      font-size: 22px;
+      font-weight: 800;
+    }
+    .ticker {
+      display: flex;
+      gap: 12px;
+      overflow: hidden;
+      margin: 0 -24px;
+      padding: 0 24px;
+    }
+    .ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      font-size: 12px;
+      white-space: nowrap;
+      flex-shrink: 0;
+      color: var(--text2);
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <div class="hero">
+    <div class="container">
+      <div class="hero-eyebrow">
+        <span class="live-dot"></span>
+        Live tracking across Karachi
+      </div>
+      <h1>
+        Report. Verify.<br>
+        <span class="accent">Fix Karachi.</span>
+      </h1>
+      <p class="hero-sub">
+        Citizens report utility crises in real-time. Community verifies.
+        Authorities act. No more waiting in the dark — literally.
+      </p>
+      <div class="hero-cta">
+        <a href="/report" class="btn btn-primary">⚡ Report an Issue</a>
+        <a href="/feed" class="btn btn-secondary">📡 View Live Feed</a>
+        <a href="/zones" class="btn btn-ghost">🗺️ Zone Status</a>
+      </div>
+    </div>
+  </div>
+
+  <div class="stats-bar" id="statsBar">
+    <div class="stat-item">
+      <div class="stat-value accent" id="totalReports">—</div>
+      <div class="stat-label">Active Reports</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--yellow)" id="loadSheddingCount">—</div>
+      <div class="stat-label">Load Shedding</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--blue)" id="waterCount">—</div>
+      <div class="stat-label">Water Issues</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--critical)" id="criticalCount">—</div>
+      <div class="stat-label">Critical Priority</div>
+    </div>
+    <div class="stat-item">
+      <div class="stat-value" style="color:var(--green)" id="resolvedToday">—</div>
+      <div class="stat-label">Zones Monitored</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="ticker" id="zoneTicker"></div>
+
+    <div class="feature-grid">
+      <div class="feature-card">
+        <span class="feature-icon">👆</span>
+        <div class="feature-title">Community Verification</div>
+        <div class="feature-desc">Tap "I'm affected too" to confirm issues. Reports with 3+ confirmations get Verified status — no fake reports.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🎯</span>
+        <div class="feature-title">Smart Prioritization</div>
+        <div class="feature-desc">Our algorithm scores reports by votes + recency. High-vote issues auto-escalate to authorities.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🗺️</span>
+        <div class="feature-title">Zone Heatmap</div>
+        <div class="feature-desc">See which areas of Karachi are worst-hit. Color-coded severity from Low (green) to Critical (red).</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🏛️</span>
+        <div class="feature-title">Authority Dashboard</div>
+        <div class="feature-desc">Admins can add official updates, set ETAs, resolve issues, and escalate to emergency response.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">📵</span>
+        <div class="feature-title">Works Offline</div>
+        <div class="feature-desc">Lost internet? Your report gets saved locally and syncs automatically when you're back online.</div>
+      </div>
+      <div class="feature-card">
+        <span class="feature-icon">🇵🇰</span>
+        <div class="feature-title">اردو Support</div>
+        <div class="feature-desc">Full Urdu interface — toggle language from the top navigation. Designed for every citizen of Karachi.</div>
+      </div>
+    </div>
+
+    <div class="recent-section">
+      <div class="section-header">
+        <h2 class="section-heading">Latest Reports</h2>
+        <a href="/feed" class="btn btn-ghost btn-sm">View All →</a>
+      </div>
+      <div id="recentReports" style="display:grid;gap:12px">
+        <div class="skeleton" style="height:100px"></div>
+        <div class="skeleton" style="height:100px"></div>
+        <div class="skeleton" style="height:100px"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+// Check if this is a refresh - if yes AND user has session, clear and logout
+const navEntry = performance.getEntriesByType('navigation')[0];
+const isRefresh = navEntry && navEntry.type === 'reload';
+const hasSession = sessionStorage.getItem('kf_role');
+
+if (isRefresh && hasSession) {
+  sessionStorage.clear();
+  window.location.replace('/');
+}
+
+// Check if user is logged in
+const role = sessionStorage.getItem('kf_role');
+
+// If NOT logged in, show login screen
+if (!role) {
+  document.body.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#0a0a0a;font-family:sans-serif">
+      <div style="text-align:center;max-width:400px;width:90%">
+        <div style="font-size:48px;margin-bottom:8px">🌊</div>
+        <div style="font-family:'Georgia',serif;font-size:32px;font-weight:900;color:#fff;margin-bottom:8px">KarachiFlow</div>
+        <div style="color:#666;font-size:14px;margin-bottom:40px">Real-Time Utility Crisis Tracker</div>
+        <div style="display:flex;flex-direction:column;gap:12px">
+          <button onclick="setRole('user')" style="padding:16px;background:#1a1a1a;border:1px solid #333;border-radius:12px;color:#fff;font-size:16px;cursor:pointer;" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='#333'">
+            👤 Continue as Citizen
+          </button>
+          <button onclick="showAdminLogin()" style="padding:16px;background:#1a1a1a;border:1px solid #333;border-radius:12px;color:#ff2d55;font-size:16px;cursor:pointer;" onmouseover="this.style.borderColor='#ff2d55'" onmouseout="this.style.borderColor='#333'">
+            ⚙️ Authority / Admin Login
+          </button>
+        </div>
+        <form id="admin-form" style="display:none;margin-top:20px" onsubmit="return false;">
+          <input type="password" id="admin-pass" placeholder="Enter admin password" autocomplete="new-password" style="width:100%;padding:12px;background:#1a1a1a;border:1px solid #333;border-radius:8px;color:#fff;font-size:15px;box-sizing:border-box;outline:none;margin-bottom:10px">
+          <button type="button" onclick="checkAdmin()" style="width:100%;padding:12px;background:#ff2d55;border:none;border-radius:8px;color:#fff;font-size:15px;font-weight:600;cursor:pointer">Login →</button>
+          <div id="admin-err" style="color:#ff2d55;font-size:12px;margin-top:8px;display:none">❌ Wrong password</div>
+        </form>
+      </div>
+    </div>`;
+
+  // Add Enter key listener AFTER the form is created in DOM
+  setTimeout(function() {
+    const passField = document.getElementById('admin-pass');
+    if (passField) {
+      passField.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.keyCode === 13) {
+          e.preventDefault();
+          e.stopPropagation();
+          checkAdmin();
+          return false;
+        }
+      });
+      
+      const adminForm = document.getElementById('admin-form');
+      if (adminForm) {
+        adminForm.addEventListener('submit', function(e) {
+          e.preventDefault();
+          checkAdmin();
+          return false;
+        });
+      }
+    }
+  }, 100);
+  
+} else {
+  // User is logged in and it's NOT a refresh - show homepage with stats
+  if (role === 'admin') {
+    window.location.href = '/admin';
+  }
+  
+  document.getElementById('nav-placeholder').innerHTML = buildNav('home');
+  initLangToggle();
+  
+  loadStats();
+  loadZoneTicker();
+  setInterval(loadStats, 30000);
+}
+
+function setRole(role) {
+  sessionStorage.setItem('kf_role', role);
+  if (role === 'admin') {
+    window.location.href = '/admin';
+  } else {
+    window.location.href = '/';  
+  }
+}
+
+function logout() {
+  sessionStorage.clear();
+  window.location.href = '/';
+}
+
+function showAdminLogin() {
+  const form = document.getElementById('admin-form');
+  form.style.display = 'block';
+  const passField = document.getElementById('admin-pass');
+  passField.value = '';
+  passField.focus();
+  const errDiv = document.getElementById('admin-err');
+  if (errDiv) errDiv.style.display = 'none';
+}
+
+async function checkAdmin() {
+  const passField = document.getElementById('admin-pass');
+  const val = passField.value;
+  const errDiv = document.getElementById('admin-err');
+  
+  if (!val) {
+    errDiv.textContent = '❌ Please enter password';
+    errDiv.style.display = 'block';
+    passField.focus();
+    return;
+  }
+  
+  try {
+    const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(val));
+    const hash = Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+    
+    if (hash === '26c749aae4e749de56d43c872cf9ec0ebcbf9040853431b08bc134e713fe26e1') {
+      sessionStorage.setItem('kf_role', 'admin');
+      window.location.href = '/admin';
+    } else {
+      errDiv.textContent = '❌ Wrong password';
+      errDiv.style.display = 'block';
+      passField.value = '';
+      passField.focus();
+    }
+  } catch (error) {
+    console.error('Admin login error:', error);
+    errDiv.textContent = '❌ Error checking password';
+    errDiv.style.display = 'block';
+  }
+}
+
+async function loadStats() {
+  try {
+    const res = await fetch('/api/reports');
+    const data = await res.json();
+    if (!data.success) return;
+    const reports = data.reports;
+    document.getElementById('totalReports').textContent = reports.length;
+    document.getElementById('loadSheddingCount').textContent = reports.filter(r => r.type === 'load_shedding').length;
+    document.getElementById('waterCount').textContent = reports.filter(r => r.type !== 'load_shedding').length;
+    document.getElementById('criticalCount').textContent = reports.filter(r => r.priority === 'critical' || r.priority === 'high').length;
+    const recentContainer = document.getElementById('recentReports');
+    recentContainer.innerHTML = reports.slice(0, 4).map(r => renderReportCard(r)).join('') ||
+      `<div class="empty-state"><div class="icon">📭</div><p>No active reports. Karachi is calm!</p></div>`;
+  } catch (e) {
+    document.getElementById('recentReports').innerHTML = `<div class="empty-state"><div class="icon">⚡</div><p>Start the backend server to see live data.</p></div>`;
+    document.getElementById('totalReports').textContent = '0';
+    document.getElementById('loadSheddingCount').textContent = '0';
+    document.getElementById('waterCount').textContent = '0';
+    document.getElementById('criticalCount').textContent = '0';
+  }
+}
+
+async function loadZoneTicker() {
+  try {
+    const res = await fetch('/api/reports/zones');
+    const data = await res.json();
+    if (!data.success) return;
+    const ticker = document.getElementById('zoneTicker');
+    document.getElementById('resolvedToday').textContent = data.zones.length;
+    ticker.innerHTML = data.zones.slice(0, 8).map(z => {
+      const sev = z.totalVotes >= 20 ? '🔴' : z.totalVotes >= 10 ? '🟠' : z.totalVotes >= 5 ? '🟡' : '🟢';
+      return `<div class="ticker-item">${sev} <strong>${z._id}</strong> · ${z.totalReports} issues</div>`;
+    }).join('');
+  } catch(e) {
+    document.getElementById('resolvedToday').textContent = '20';
+  }
+}
+</script>
+</body>
+</html>

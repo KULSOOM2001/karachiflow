@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Live Feed — KarachiFlow</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .feed-layout {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 24px;
+      align-items: start;
+      padding-bottom: 60px;
+    }
+    @media (max-width: 900px) { .feed-layout { grid-template-columns: 1fr; } }
+    .reports-list { display: flex; flex-direction: column; gap: 12px; }
+    .refresh-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding: 10px 14px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      font-size: 13px;
+      color: var(--text2);
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <div class="container">
+    <div class="page-header">
+      <h1 class="page-title">📡 Live Feed</h1>
+      <p class="page-sub">All active utility reports across Karachi — updated every 30 seconds</p>
+    </div>
+
+    <div class="filter-bar">
+      <button class="filter-btn active" data-type="all" onclick="setFilter('all', this)">All Issues</button>
+      <button class="filter-btn" data-type="load_shedding" onclick="setFilter('load_shedding', this)">⚡ Load Shedding</button>
+      <button class="filter-btn" data-type="water_shortage" onclick="setFilter('water_shortage', this)">💧 Water Shortage</button>
+      <button class="filter-btn" data-type="tanker_unavailable" onclick="setFilter('tanker_unavailable', this)">🚛 Tanker</button>
+      <button class="filter-btn" data-priority="high" onclick="setPriorityFilter(this)">🔴 High Priority</button>
+    </div>
+
+    <div class="feed-layout">
+      <div>
+        <div class="refresh-bar">
+          <span class="pulse-ring">Live</span>
+          <span id="reportCount">Loading...</span>
+          <button class="btn btn-ghost btn-sm" onclick="loadReports()">↺ Refresh</button>
+        </div>
+        <div class="reports-list" id="reportsList">
+          <div class="skeleton" style="height:120px"></div>
+          <div class="skeleton" style="height:120px"></div>
+          <div class="skeleton" style="height:120px"></div>
+          <div class="skeleton" style="height:120px"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="sidebar-card">
+          <h3>Top Zones</h3>
+          <div id="topZones" style="display:flex;flex-direction:column;gap:8px"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Issue Breakdown</h3>
+          <div id="breakdown" style="display:flex;flex-direction:column;gap:10px"></div>
+        </div>
+
+        <div class="sidebar-card">
+          <h3>Report an Issue</h3>
+          <p style="font-size:13px;color:var(--text2);margin-bottom:14px">Experiencing a utility problem? Report it in 30 seconds.</p>
+          <a href="/report" class="btn btn-primary" style="width:100%;justify-content:center">⚡ Report Now</a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    // Check if refresh - logout
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload' && sessionStorage.getItem('kf_role')) {
+      sessionStorage.clear();
+      window.location.replace('/');
+    }
+    // Check if logged in
+    if (!sessionStorage.getItem('kf_role')) {
+      window.location.replace('/');
+    }
+
+    document.getElementById('nav-placeholder').innerHTML = buildNav('feed');
+    initLangToggle();
+
+    let currentFilter = 'all';
+    let priorityFilter = false;
+    let allReports = [];
+
+    function setFilter(type, btn) {
+      currentFilter = type;
+      priorityFilter = false;
+      document.querySelectorAll('.filter-btn[data-type]').forEach(b => b.classList.remove('active'));
+      document.querySelector('[data-priority]')?.classList.remove('active');
+      btn.classList.add('active');
+      renderReports();
+    }
+
+    function setPriorityFilter(btn) {
+      priorityFilter = !priorityFilter;
+      btn.classList.toggle('active', priorityFilter);
+      renderReports();
+    }
+
+    function renderReports() {
+      let filtered = allReports;
+      if (currentFilter !== 'all') filtered = filtered.filter(r => r.type === currentFilter);
+      if (priorityFilter) filtered = filtered.filter(r => r.priority === 'high' || r.priority === 'critical');
+      const container = document.getElementById('reportsList');
+      document.getElementById('reportCount').textContent = `${filtered.length} reports`;
+      if (filtered.length === 0) {
+        container.innerHTML = `<div class="empty-state"><div class="icon">📭</div><p>No reports match your filter. Try changing filters or <a href="/report" style="color:var(--accent)">report an issue</a>.</p></div>`;
+        return;
+      }
+      container.innerHTML = filtered.map(r => renderReportCard(r)).join('');
+    }
+
+    async function loadReports() {
+      try {
+        const res = await fetch('/api/reports');
+        const data = await res.json();
+        if (data.success) {
+          allReports = data.reports;
+          renderReports();
+          loadSidebar();
+        }
+      } catch (e) {
+        document.getElementById('reportsList').innerHTML =
+          `<div class="empty-state"><div class="icon">⚠️</div><p>Could not connect to server. Make sure the backend is running.</p></div>`;
+        document.getElementById('reportCount').textContent = '0 reports';
+      }
+    }
+
+    async function loadSidebar() {
+      const zoneMap = {};
+      allReports.forEach(r => {
+        if (!zoneMap[r.zone]) zoneMap[r.zone] = { count: 0, votes: 0 };
+        zoneMap[r.zone].count++;
+        zoneMap[r.zone].votes += r.votes;
+      });
+      const sorted = Object.entries(zoneMap).sort((a,b) => b[1].votes - a[1].votes).slice(0, 6);
+      const maxVotes = sorted[0]?.[1].votes || 1;
+      document.getElementById('topZones').innerHTML = sorted.map(([zone, d]) => `
+        <div style="font-size:13px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+            <span>${zone}</span>
+            <span style="color:var(--text3)">${d.count} issue${d.count>1?'s':''}</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:4px">
+            <div style="background:var(--accent);height:4px;border-radius:4px;width:${Math.round(d.votes/maxVotes*100)}%;transition:width 0.5s"></div>
+          </div>
+        </div>
+      `).join('');
+
+      const ls = allReports.filter(r => r.type === 'load_shedding').length;
+      const ws = allReports.filter(r => r.type === 'water_shortage').length;
+      const tn = allReports.filter(r => r.type === 'tanker_unavailable').length;
+      const total = allReports.length || 1;
+      document.getElementById('breakdown').innerHTML = [
+        { label: '⚡ Load Shedding', count: ls, color: 'var(--yellow)' },
+        { label: '💧 Water Shortage', count: ws, color: 'var(--blue)' },
+        { label: '🚛 Tanker Unavail.', count: tn, color: 'var(--green)' }
+      ].map(item => `
+        <div>
+          <div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px">
+            <span>${item.label}</span><span style="color:var(--text3)">${item.count}</span>
+          </div>
+          <div style="background:var(--bg3);border-radius:4px;height:4px">
+            <div style="background:${item.color};height:4px;border-radius:4px;width:${Math.round(item.count/total*100)}%;transition:width 0.5s"></div>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    loadReports();
+    setInterval(loadReports, 30000);
+
+    if ('Notification' in window) {
+      Notification.requestPermission();
+    }
+  </script>
+</body>
+</html>

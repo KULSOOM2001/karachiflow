@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard — KarachiFlow</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .admin-header-bar {
+      background: rgba(255,45,85,0.06);
+      border: 1px solid rgba(255,45,85,0.15);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 28px;
+      font-size: 13px;
+      color: var(--text2);
+    }
+    .admin-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+    .admin-stat {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px 18px;
+    }
+    .admin-stat-val {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .admin-stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .08em; }
+    .update-modal {
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 200;
+      align-items: center;
+      justify-content: center;
+      display: none;
+    }
+    .update-modal.open { display: flex; }
+    .update-box {
+      background: var(--surface);
+      border: 1px solid var(--border2);
+      border-radius: 16px;
+      padding: 28px;
+      max-width: 440px;
+      width: 90%;
+    }
+    .tab-bar {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 20px;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      color: var(--text2);
+      cursor: pointer;
+      font-family: var(--font-body);
+      font-size: 13px;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: var(--surface2);
+      color: var(--text);
+    }
+    .table-wrapper {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      overflow: hidden;
+    }
+    .table-wrapper table { width: 100%; border-collapse: collapse; }
+    .table-wrapper th {
+      padding: 12px 16px;
+      text-align: left;
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text3);
+      border-bottom: 1px solid var(--border);
+      font-weight: 500;
+      background: var(--bg3);
+    }
+    .table-wrapper td {
+      padding: 13px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 13px;
+      vertical-align: middle;
+    }
+    .table-wrapper tr:last-child td { border-bottom: none; }
+    .table-wrapper tr:hover td { background: rgba(255,255,255,0.02); }
+    .action-btns { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+  <div class="container" style="padding-bottom:60px">
+    <div class="page-header">
+      <h1 class="page-title">⚙️ Authority Dashboard</h1>
+      <p class="page-sub">Manage, resolve, and escalate citizen-reported utility issues</p>
+    </div>
+
+    <div class="admin-header-bar">
+      <span>🏛️ KWSB / K-Electric Authority Panel — All reports visible</span>
+      <span class="pulse-ring">Live feed active</span>
+    </div>
+
+    <div class="admin-stats">
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="aTotal" style="color:var(--text)">—</div>
+        <div class="admin-stat-label">Total Reports</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="aActive" style="color:var(--medium)">—</div>
+        <div class="admin-stat-label">Active</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="aEscalated" style="color:var(--critical)">—</div>
+        <div class="admin-stat-label">Escalated</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="aResolved" style="color:var(--green)">—</div>
+        <div class="admin-stat-label">Resolved</div>
+      </div>
+      <div class="admin-stat">
+        <div class="admin-stat-val" id="aCritical" style="color:var(--high)">—</div>
+        <div class="admin-stat-label">Critical Priority</div>
+      </div>
+    </div>
+
+    <div class="tab-bar">
+      <button class="tab-btn active" onclick="setTab('active', this)">🟡 Active & Escalated</button>
+      <button class="tab-btn" onclick="setTab('all', this)">📋 All Reports</button>
+      <button class="tab-btn" onclick="setTab('resolved', this)">✅ Resolved</button>
+    </div>
+
+    <div class="table-wrapper">
+      <table>
+        <thead>
+          <tr>
+            <th>Issue</th>
+            <th>Zone</th>
+            <th>Priority</th>
+            <th>Status</th>
+            <th>Votes</th>
+            <th>Time</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="adminTableBody">
+          <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Loading reports...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Official Update Modal -->
+  <div class="update-modal" id="updateModal" onclick="if(event.target===this)closeUpdateModal()">
+    <div class="update-box">
+      <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:20px">📢 Add Official Update</h3>
+      <input type="hidden" id="updateReportId">
+      <div class="form-group">
+        <label>Official Statement</label>
+        <textarea id="officialMsg" placeholder="e.g. Repair team dispatched. Issue will be resolved in 2 hours."></textarea>
+      </div>
+      <div class="form-group">
+        <label>Estimated Resolution Time</label>
+        <input type="text" id="etaInput" placeholder="e.g. 2–3 hours, Tonight by 11 PM">
+      </div>
+      <div style="display:flex;gap:10px">
+        <button onclick="closeUpdateModal()" class="btn btn-ghost" style="flex:1">Cancel</button>
+        <button onclick="submitOfficialUpdate()" class="btn btn-primary" style="flex:2">📢 Publish Update</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    // Check if this is a refresh - if yes, clear session
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    const isRefresh = navEntry && navEntry.type === 'reload';
+    
+    if (isRefresh && sessionStorage.getItem('kf_role')) {
+      sessionStorage.clear();
+      window.location.replace('/');
+    }
+    
+    // Admin authentication check
+    if (sessionStorage.getItem('kf_role') !== 'admin') {
+      window.location.replace('/');
+    }
+
+    document.getElementById('nav-placeholder').innerHTML = buildNav('admin');
+    initLangToggle();
+
+    let allReports = [];
+    let currentTab = 'active';
+
+    function setTab(tab, btn) {
+      currentTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTable();
+    }
+
+    function renderTable() {
+      let filtered = allReports;
+      if (currentTab === 'active') filtered = filtered.filter(r => r.status !== 'resolved');
+      else if (currentTab === 'resolved') filtered = filtered.filter(r => r.status === 'resolved');
+
+      const tbody = document.getElementById('adminTableBody');
+      if (filtered.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No reports in this category.</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(r => {
+        const type = ISSUE_TYPES[r.type] || ISSUE_TYPES.load_shedding;
+        const priority = PRIORITY_LABELS[r.priority] || PRIORITY_LABELS.low;
+        const status = STATUS_LABELS[r.status] || STATUS_LABELS.active;
+        return `
+          <tr>
+            <td>
+              <div style="font-weight:500">${type.icon} ${type.label}</div>
+              ${r.description ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.description.slice(0,50)}${r.description.length>50?'...':''}</div>` : ''}
+            </td>
+            <td><span style="font-size:13px">📍 ${r.zone}</span></td>
+            <td><span class="badge ${priority.class}">${priority.label}</span></td>
+            <td><span class="badge ${status.class}">${status.label}</span></td>
+            <td><span style="font-weight:600">${r.votes}</span></td>
+            <td style="color:var(--text3)">${timeAgo(r.createdAt)}</td>
+            <td>
+              <div class="action-btns">
+                ${r.status !== 'resolved' ? `
+                  <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')">✅</button>
+                  <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')">🚨</button>
+                  <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')">📢</button>
+                ` : `<span style="color:var(--text3);font-size:12px">—</span>`}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    async function loadReports() {
+      try {
+        const res = await fetch('/api/reports/admin/all');
+        const data = await res.json();
+        if (data.success) {
+          allReports = data.reports;
+          updateStats();
+          renderTable();
+        }
+      } catch (e) {
+        document.getElementById('adminTableBody').innerHTML =
+          `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Backend not connected. Start the server to manage reports.</td></tr>`;
+      }
+    }
+
+    function updateStats() {
+      document.getElementById('aTotal').textContent = allReports.length;
+      document.getElementById('aActive').textContent = allReports.filter(r => r.status === 'active' || r.status === 'verified').length;
+      document.getElementById('aEscalated').textContent = allReports.filter(r => r.status === 'escalated').length;
+      document.getElementById('aResolved').textContent = allReports.filter(r => r.status === 'resolved').length;
+      document.getElementById('aCritical').textContent = allReports.filter(r => r.priority === 'critical' || r.priority === 'high').length;
+    }
+
+    async function updateStatus(id, status) {
+      try {
+        const res = await fetch(`/api/reports/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast(`Report ${status}!`, 'success');
+          await loadReports();
+        }
+      } catch (e) {
+        showToast('Error updating report', 'error');
+      }
+    }
+
+    function addOfficialUpdate(id) {
+      document.getElementById('updateReportId').value = id;
+      document.getElementById('officialMsg').value = '';
+      document.getElementById('etaInput').value = '';
+      document.getElementById('updateModal').classList.add('open');
+    }
+
+    async function submitOfficialUpdate() {
+      const id = document.getElementById('updateReportId').value;
+      const officialUpdate = document.getElementById('officialMsg').value;
+      const estimatedResolution = document.getElementById('etaInput').value;
+      if (!officialUpdate) { showToast('Please enter a message', 'error'); return; }
+      try {
+        const res = await fetch(`/api/reports/${id}/status`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'verified', officialUpdate, estimatedResolution })
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Official update published!', 'success');
+          closeUpdateModal();
+          await loadReports();
+        }
+      } catch (e) {
+        showToast('Error publishing update', 'error');
+      }
+    }
+
+    function closeUpdateModal() {
+      document.getElementById('updateModal').classList.remove('open');
+    }
+
+    loadReports();
+    setInterval(loadReports, 30000);
+  </script>
+</body>
+</html>

@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Report Issue — KarachiFlow</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <style>
+    .report-wrapper {
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 40px 0 80px;
+    }
+    .form-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 32px;
+    }
+    .step-indicator {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .step {
+      flex: 1;
+      height: 3px;
+      background: var(--border);
+      border-radius: 2px;
+      transition: background 0.3s;
+    }
+    .step.done { background: var(--accent); }
+    .step.active { background: var(--accent2); }
+    .offline-banner {
+      background: rgba(255,194,70,0.08);
+      border: 1px solid rgba(255,194,70,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--medium);
+      margin-bottom: 20px;
+      display: none;
+    }
+    .draft-banner {
+      background: rgba(77,143,255,0.08);
+      border: 1px solid rgba(77,143,255,0.2);
+      border-radius: var(--radius-sm);
+      padding: 10px 14px;
+      font-size: 13px;
+      color: var(--blue2);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+  </style>
+</head>
+<body>
+  <div id="nav-placeholder"></div>
+
+  <div class="container">
+    <div class="report-wrapper">
+      <div class="page-header">
+        <h1 class="page-title">⚡ Report an Issue</h1>
+        <p class="page-sub">Your report helps your neighborhood. It takes 30 seconds.</p>
+      </div>
+
+      <div id="draftBanner" class="draft-banner" style="display:none">
+        📝 You have a saved draft.
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-sm btn-secondary" onclick="loadSavedDraft()">Restore</button>
+          <button class="btn btn-sm btn-ghost" onclick="discardDraft()">Discard</button>
+        </div>
+      </div>
+
+      <div id="offlineBanner" class="offline-banner">
+        📵 You're offline — your report will be saved and submitted when you reconnect.
+      </div>
+
+      <div class="form-card">
+        <div class="step-indicator">
+          <div class="step active" id="step1"></div>
+          <div class="step" id="step2"></div>
+          <div class="step" id="step3"></div>
+        </div>
+
+        <form id="reportForm" onsubmit="submitReport(event)">
+          <!-- Step 1: Issue Type -->
+          <div id="stepContent1">
+            <div class="section-title">What's the problem?</div>
+            <div class="form-group">
+              <div class="type-selector">
+                <div class="type-option">
+                  <input type="radio" name="type" id="type-load" value="load_shedding" checked>
+                  <label for="type-load">
+                    <span class="icon">⚡</span>
+                    Load Shedding
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="type" id="type-water" value="water_shortage">
+                  <label for="type-water">
+                    <span class="icon">💧</span>
+                    Water Shortage
+                  </label>
+                </div>
+                <div class="type-option">
+                  <input type="radio" name="type" id="type-tanker" value="tanker_unavailable">
+                  <label for="type-tanker">
+                    <span class="icon">🚛</span>
+                    Tanker Unavailable
+                  </label>
+                </div>
+              </div>
+            </div>
+            <button type="button" class="btn btn-primary" style="width:100%" onclick="nextStep(2)">
+              Continue →
+            </button>
+          </div>
+
+          <!-- Step 2: Location + Details -->
+          <div id="stepContent2" style="display:none">
+            <div class="section-title">Where & what?</div>
+            <div class="form-group">
+              <label>Your Area / Zone</label>
+              <select id="zone" required>
+                <option value="">Select your area...</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Description (optional)</label>
+              <textarea id="description" placeholder="e.g. Bijli subah se nahi hai, KESC ko call kiya koi jawab nahi..."></textarea>
+            </div>
+            <div class="form-group">
+              <label>Your Name (optional)</label>
+              <input type="text" id="reporterName" placeholder="Anonymous">
+            </div>
+            <div style="display:flex;gap:10px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="nextStep(1)">← Back</button>
+              <button type="button" class="btn btn-primary" style="flex:2" onclick="nextStep(3)">Continue →</button>
+            </div>
+          </div>
+
+          <!-- Step 3: Review + Submit -->
+          <div id="stepContent3" style="display:none">
+            <div class="section-title">Review your report</div>
+            <div id="reviewBox" class="card" style="margin-bottom:20px"></div>
+            <div style="display:flex;gap:10px">
+              <button type="button" class="btn btn-ghost" style="flex:1" onclick="nextStep(2)">← Edit</button>
+              <button type="submit" class="btn btn-primary" style="flex:2" id="submitBtn">
+                🚀 Submit Report
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+
+      <div style="margin-top:16px;text-align:center;font-size:12px;color:var(--text3)">
+        <span class="pulse-ring">System online</span> · Reports are public · No personal data stored
+      </div>
+    </div>
+  </div>
+
+  <div id="successModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;display:none;align-items:center;justify-content:center">
+    <div style="background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:40px;text-align:center;max-width:360px;margin:20px">
+      <div style="font-size:52px;margin-bottom:16px">✅</div>
+      <h2 style="font-family:var(--font-display);font-size:22px;font-weight:800;margin-bottom:10px">Report Submitted!</h2>
+      <p style="color:var(--text2);margin-bottom:24px;font-size:14px">Your report is live. Other citizens can now confirm this issue.</p>
+      <div style="display:flex;gap:10px">
+        <a href="/feed" class="btn btn-primary" style="flex:1">View Feed</a>
+        <button onclick="resetForm()" class="btn btn-secondary" style="flex:1">Report Another</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    // Check if refresh - logout
+    const navEntry = performance.getEntriesByType('navigation')[0];
+    if (navEntry && navEntry.type === 'reload' && sessionStorage.getItem('kf_role')) {
+      sessionStorage.clear();
+      window.location.replace('/');
+    }
+    // Check if logged in
+    if (!sessionStorage.getItem('kf_role')) {
+      window.location.replace('/');
+    }
+
+    document.getElementById('nav-placeholder').innerHTML = buildNav('report');
+    initLangToggle();
+
+    const zoneSelect = document.getElementById('zone');
+    ZONES.forEach(z => {
+      const opt = document.createElement('option');
+      opt.value = z;
+      opt.textContent = z;
+      zoneSelect.appendChild(opt);
+    });
+
+    window.addEventListener('offline', () => {
+      document.getElementById('offlineBanner').style.display = 'block';
+    });
+    window.addEventListener('online', () => {
+      document.getElementById('offlineBanner').style.display = 'none';
+      syncOfflineQueue();
+    });
+    if (!navigator.onLine) document.getElementById('offlineBanner').style.display = 'block';
+
+    const draft = loadDraft();
+    if (draft) document.getElementById('draftBanner').style.display = 'flex';
+
+    let currentStep = 1;
+
+    function nextStep(step) {
+      if (step === 3) {
+        if (!document.getElementById('zone').value) {
+          showToast('Please select your area', 'error');
+          return;
+        }
+        buildReview();
+      }
+      document.getElementById('stepContent' + currentStep).style.display = 'none';
+      document.getElementById('stepContent' + step).style.display = 'block';
+
+      for (let i = 1; i <= 3; i++) {
+        const el = document.getElementById('step' + i);
+        el.classList.remove('active', 'done');
+        if (i < step) el.classList.add('done');
+        else if (i === step) el.classList.add('active');
+      }
+
+      if (step > 1) {
+        saveDraft({
+          type: document.querySelector('input[name="type"]:checked')?.value,
+          zone: document.getElementById('zone').value,
+          description: document.getElementById('description').value,
+          reporterName: document.getElementById('reporterName').value
+        });
+      }
+
+      currentStep = step;
+    }
+
+    function buildReview() {
+      const type = document.querySelector('input[name="type"]:checked')?.value;
+      const zone = document.getElementById('zone').value;
+      const desc = document.getElementById('description').value;
+      const name = document.getElementById('reporterName').value || 'Anonymous';
+      const typeInfo = ISSUE_TYPES[type];
+      document.getElementById('reviewBox').innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:10px">
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text2);font-size:13px">Issue Type</span>
+            <span style="font-weight:500">${typeInfo.icon} ${typeInfo.label}</span>
+          </div>
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text2);font-size:13px">Area</span>
+            <span style="font-weight:500">📍 ${zone}</span>
+          </div>
+          ${desc ? `<div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text2);font-size:13px">Description</span>
+            <span style="font-size:13px;max-width:200px;text-align:right">${desc}</span>
+          </div>` : ''}
+          <div style="display:flex;justify-content:space-between">
+            <span style="color:var(--text2);font-size:13px">Reporter</span>
+            <span style="font-weight:500">👤 ${name}</span>
+          </div>
+        </div>
+      `;
+    }
+
+    async function submitReport(e) {
+      e.preventDefault();
+      const btn = document.getElementById('submitBtn');
+      btn.disabled = true;
+      btn.textContent = 'Submitting...';
+
+      const payload = {
+        type: document.querySelector('input[name="type"]:checked')?.value,
+        zone: document.getElementById('zone').value,
+        description: document.getElementById('description').value,
+        reporterName: document.getElementById('reporterName').value || 'Anonymous'
+      };
+
+      if (!navigator.onLine) {
+        const queue = JSON.parse(localStorage.getItem('kf_submit_queue') || '[]');
+        queue.push({ ...payload, queuedAt: Date.now() });
+        localStorage.setItem('kf_submit_queue', JSON.stringify(queue));
+        clearDraft();
+        showSuccessModal();
+        return;
+      }
+
+      try {
+        const res = await fetch('/api/reports', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success) {
+          clearDraft();
+          showSuccessModal();
+        } else {
+          showToast('Error: ' + data.error, 'error');
+          btn.disabled = false;
+          btn.textContent = '🚀 Submit Report';
+        }
+      } catch (err) {
+        showToast('Network error — saved offline', 'error');
+        btn.disabled = false;
+        btn.textContent = '🚀 Submit Report';
+      }
+    }
+
+    function showSuccessModal() {
+      const modal = document.getElementById('successModal');
+      modal.style.display = 'flex';
+    }
+
+    function resetForm() {
+      document.getElementById('successModal').style.display = 'none';
+      document.getElementById('reportForm').reset();
+      nextStep(1);
+      currentStep = 1;
+    }
+
+    function loadSavedDraft() {
+      const d = loadDraft();
+      if (!d) return;
+      if (d.type) {
+        const radio = document.querySelector(`input[name="type"][value="${d.type}"]`);
+        if (radio) radio.checked = true;
+      }
+      if (d.zone) document.getElementById('zone').value = d.zone;
+      if (d.description) document.getElementById('description').value = d.description;
+      if (d.reporterName) document.getElementById('reporterName').value = d.reporterName;
+      document.getElementById('draftBanner').style.display = 'none';
+      nextStep(2);
+      showToast('Draft restored!', 'success');
+    }
+
+    function discardDraft() {
+      clearDraft();
+      document.getElementById('draftBanner').style.display = 'none';
+    }
+
+    async function syncOfflineQueue() {
+      const queue = JSON.parse(localStorage.getItem('kf_submit_queue') || '[]');
+      if (queue.length === 0) return;
+      for (const item of queue) {
+        try {
+          await fetch('/api/reports', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(item)
+          });
+        } catch (e) { return; }
+      }
+      localStorage.removeItem('kf_submit_queue');
+      showToast(`${queue.length} offline report(s) synced!`, 'success');
+    }
+  </script>
+</body>
+</html>
