@@ -332,7 +332,22 @@
     function closeUpdateModal() {
       document.getElementById('updateModal').classList.remove('open');
     }
-
+    async function deleteReport(id) {
+      if (!confirm('Delete this report permanently?')) return;
+      try {
+        const res = await fetch(`/api/reports/${id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+         showToast('Report deleted!', 'success');
+         await loadReports();
+        }
+      } catch (e) {
+        showToast('Error deleting report', 'error');
+        }
+    }
+    
     loadReports();
     setInterval(loadReports, 30000);
   </script>
