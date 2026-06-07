@@ -40,6 +40,9 @@
   
   // Allow public pages
   if (PUBLIC_PAGES.includes(path)) return;
+
+  // Allow zone selection flow
+  if (sessionStorage.getItem('kf_zone_selecting') === 'true') return;
   
   // Redirect to home if no role
   if (!role) {

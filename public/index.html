@@ -257,8 +257,9 @@ function setRole(role) {
   if (role === 'admin') {
     window.location.href = '/admin';
   } else {
-    showZoneSelection();
-    window.location.href = '/';  
+    // Zone selection ke liye flag
+    sessionStorage.setItem('kf_zone_selecting', 'true');
+    window.location.href = '/';
   }
 }
 
