@@ -133,16 +133,16 @@
     let allReports = [];
 
     function getSeverityClass(votes) {
-      if (votes >= 20) return 'severity-critical';
-      if (votes >= 10) return 'severity-high';
-      if (votes >= 5) return 'severity-medium';
+      if (votes >= 5) return 'severity-critical';
+      if (votes >= 3) return 'severity-high';
+      if (votes >= 2) return 'severity-medium';
       return 'severity-low';
     }
 
     function getSeverityColor(votes) {
-      if (votes >= 20) return 'var(--critical)';
-      if (votes >= 10) return 'var(--high)';
-      if (votes >= 5) return 'var(--medium)';
+      if (votes >= 5) return 'var(--critical)';
+      if (votes >= 3) return 'var(--high)';
+      if (votes >= 2) return 'var(--medium)';
       return 'var(--low)';
     }
 
