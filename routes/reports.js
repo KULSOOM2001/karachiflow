@@ -91,10 +91,11 @@ router.patch('/:id/vote', validateId, async (req, res) => {
 // PATCH resolve/escalate (admin)
 router.patch('/:id/status', validateId, async (req, res) => {
   try {
-    const { status, officialUpdate, estimatedResolution } = req.body;
+    const { status, officialUpdate, estimatedResolution, priority } = req.body;
     const update = { status, updatedAt: new Date() };
     if (officialUpdate) update.officialUpdate = officialUpdate;
     if (estimatedResolution) update.estimatedResolution = estimatedResolution;
+    if (priority) update.priority = priority;  // ✅ ADD THIS LINE
     const report = await Report.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!report) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, report });
@@ -112,7 +113,7 @@ router.get('/admin/all', async (req, res) => {
     res.status(500).json({ success: false, error: e.message });
   }
 });
-// DELETE report
+
 // DELETE report
 router.delete('/:id', async (req, res) => {
   try {
