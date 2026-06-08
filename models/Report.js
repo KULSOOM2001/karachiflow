@@ -25,11 +25,21 @@ const reportSchema = new mongoose.Schema({
 
 reportSchema.pre('save', function(next) {
   this.updatedAt = new Date();
-  if (this.votes >= 20) this.priority = 'critical';
-  else if (this.votes >= 10) this.priority = 'high';
-  else if (this.votes >= 5) this.priority = 'medium';
+  
+  // Priority calculation
+  if (this.votes >= 5) this.priority = 'critical';
+  else if (this.votes >= 3) this.priority = 'high';
+  else if (this.votes >= 2) this.priority = 'medium';
   else this.priority = 'low';
-  if (this.votes >= 3) this.status = this.status === 'active' ? 'verified' : this.status;
+  
+  // Status auto-update ONLY for active reports
+  if (this.status === 'active' && this.votes >= 3) {
+    this.status = 'verified';
+  }
+  if (this.status === 'verified' && this.votes >= 5) {
+    this.status = 'escalated';
+  }
+  
   next();
 });
 
