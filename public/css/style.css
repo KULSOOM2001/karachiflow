@@ -774,6 +774,28 @@ section { padding: 40px 0; }
 }
 
 /* ============ FEATURE CARDS ============ */
+/* ============ FEATURE CARDS ============ */
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin: 48px auto;
+  max-width: 1000px;
+  justify-content: center;
+}
+
+@media (max-width: 900px) {
+  .feature-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .feature-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
 .feature-card {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
@@ -788,6 +810,7 @@ section { padding: 40px 0; }
   transform: scale(1.2);
   transition: transform 0.3s ease;
 }
+
 
 /* ============ MODAL ============ */
 .update-modal { backdrop-filter: blur(8px); }
