@@ -104,8 +104,7 @@ npm install
 
 ### 2. Environment Setup
 ```bash
-cp .env.example .env
-# Edit .env with your MongoDB URI
+Create a `.env` file in the root directory with your MongoDB connection string and admin secret.
 ```
 
 ### 3. Run locally
@@ -119,7 +118,7 @@ npm start
 2. Go to railway.app → New Web Service → Connect repo
 3. Build command: `npm install`
 4. Start command: `node server.js`
-5. Add environment variable: `MONGO_URI` = your Atlas URI
+5. dd the required environment variables in Railway dashboard.
 
 ---
 
