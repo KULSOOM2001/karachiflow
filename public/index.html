@@ -155,23 +155,6 @@
         <div class="feature-title">Works Offline</div>
         <div class="feature-desc">Lost internet? Your report gets saved locally and syncs automatically when you're back online.</div>
       </div>
-      <div class="feature-card">
-        <span class="feature-icon">🇵🇰</span>
-        <div class="feature-title">اردو Support</div>
-        <div class="feature-desc">Full Urdu interface — toggle language from the top navigation. Designed for every citizen of Karachi.</div>
-      </div>
-    </div>
-
-    <div class="recent-section">
-      <div class="section-header">
-        <h2 class="section-heading">Latest Reports</h2>
-        <a href="/feed" class="btn btn-ghost btn-sm">View All →</a>
-      </div>
-      <div id="recentReports" style="display:grid;gap:12px">
-        <div class="skeleton" style="height:100px"></div>
-        <div class="skeleton" style="height:100px"></div>
-        <div class="skeleton" style="height:100px"></div>
-      </div>
     </div>
   </div>
 
@@ -413,9 +396,6 @@ async function loadStats() {
     document.getElementById('loadSheddingCount').textContent = reports.filter(r => r.type === 'load_shedding').length;
     document.getElementById('waterCount').textContent = reports.filter(r => r.type !== 'load_shedding').length;
     document.getElementById('criticalCount').textContent = reports.filter(r => r.priority === 'critical' || r.priority === 'high').length;
-    const recentContainer = document.getElementById('recentReports');
-    recentContainer.innerHTML = reports.slice(0, 4).map(r => renderReportCard(r)).join('') ||
-      `<div class="empty-state"><div class="icon">📭</div><p>No active reports. Karachi is calm!</p></div>`;
   } catch (e) {
     document.getElementById('recentReports').innerHTML = `<div class="empty-state"><div class="icon">⚡</div><p>Start the backend server to see live data.</p></div>`;
     document.getElementById('totalReports').textContent = '0';
