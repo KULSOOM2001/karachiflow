@@ -118,7 +118,7 @@ npm start
 2. Go to railway.app → New Web Service → Connect repo
 3. Build command: `npm install`
 4. Start command: `node server.js`
-5. dd the required environment variables in Railway dashboard.
+5. Add the required environment variables in Railway dashboard.
 
 ---
 
