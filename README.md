@@ -183,7 +183,3 @@ npm start
 - [ ] Mobile App: React Native for iOS & Android
 
 ---
-
----
-
-**Bas copy karo, GitHub pe paste karo, commit! Solo developer show hoga! 🚀**
