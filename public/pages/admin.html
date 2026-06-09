@@ -83,9 +83,9 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      overflow: hidden;
+      overflow-x: auto;
     }
-    .table-wrapper table { width: 100%; border-collapse: collapse; }
+    .table-wrapper table { width: 100%; border-collapse: collapse; min-width: 800px; }
     .table-wrapper th {
       padding: 12px 16px;
       text-align: left;
@@ -105,7 +105,34 @@
     }
     .table-wrapper tr:last-child td { border-bottom: none; }
     .table-wrapper tr:hover td { background: rgba(255,255,255,0.02); }
-    .action-btns { display: flex; gap: 6px; }
+    .action-btns { display: flex; gap: 6px; flex-wrap: wrap; }
+    .vote-stats {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+    }
+    .vote-agree { color: var(--green); }
+    .vote-disagree { color: var(--critical); }
+    .flagged-row {
+      background: rgba(255,45,85,0.05);
+      border-left: 3px solid var(--critical);
+    }
+    .confidence-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--border);
+      border-radius: 2px;
+      overflow: hidden;
+      margin-top: 4px;
+    }
+    .confidence-fill {
+      height: 100%;
+      background: var(--green);
+      border-radius: 2px;
+      transition: width 0.3s;
+    }
+    .confidence-fill.low { background: var(--critical); }
+    .confidence-fill.medium { background: var(--medium); }
   </style>
 </head>
 <body>
@@ -139,8 +166,8 @@
         <div class="admin-stat-label">Resolved</div>
       </div>
       <div class="admin-stat">
-        <div class="admin-stat-val" id="aCritical" style="color:var(--high)">—</div>
-        <div class="admin-stat-label">Critical Priority</div>
+        <div class="admin-stat-val" id="aFlagged" style="color:var(--critical)">—</div>
+        <div class="admin-stat-label">⚠️ Flagged</div>
       </div>
     </div>
 
@@ -148,6 +175,7 @@
       <button class="tab-btn active" onclick="setTab('active', this)">🟡 Active & Escalated</button>
       <button class="tab-btn" onclick="setTab('all', this)">📋 All Reports</button>
       <button class="tab-btn" onclick="setTab('resolved', this)">✅ Resolved</button>
+      <button class="tab-btn" onclick="setTab('flagged', this)">⚠️ Flagged</button>
     </div>
 
     <div class="table-wrapper">
@@ -158,13 +186,14 @@
             <th>Zone</th>
             <th>Priority</th>
             <th>Status</th>
-            <th>Votes</th>
+            <th>Votes (✅/❌)</th>
+            <th>Confidence</th>
             <th>Time</th>
             <th>Actions</th>
           </tr>
         </thead>
         <tbody id="adminTableBody">
-          <tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Loading reports...</td></tr>
+          <tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Loading reports...</td></tr>
         </tbody>
       </table>
     </div>
@@ -219,14 +248,21 @@
       renderTable();
     }
 
+    function getConfidenceClass(percentage) {
+      if (percentage >= 70) return 'high';
+      if (percentage >= 40) return 'medium';
+      return 'low';
+    }
+
     function renderTable() {
       let filtered = allReports;
       if (currentTab === 'active') filtered = filtered.filter(r => r.status !== 'resolved');
       else if (currentTab === 'resolved') filtered = filtered.filter(r => r.status === 'resolved');
+      else if (currentTab === 'flagged') filtered = filtered.filter(r => r.isFlagged === true);
 
       const tbody = document.getElementById('adminTableBody');
       if (filtered.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">No reports in this category.</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">No reports in this category.</td></tr>`;
         return;
       }
 
@@ -234,25 +270,44 @@
         const type = ISSUE_TYPES[r.type] || ISSUE_TYPES.load_shedding;
         const priority = PRIORITY_LABELS[r.priority] || PRIORITY_LABELS.low;
         const status = STATUS_LABELS[r.status] || STATUS_LABELS.active;
+        const agreeVotes = r.votes || 0;
+        const disagreeVotes = r.disagreeVotes || 0;
+        const totalVotes = agreeVotes + disagreeVotes;
+        const confidence = totalVotes > 0 ? ((agreeVotes / totalVotes) * 100).toFixed(0) : 0;
+        const confidenceClass = getConfidenceClass(confidence);
+        const isFlagged = r.isFlagged || false;
+        
         return `
-          <tr>
+          <tr class="${isFlagged ? 'flagged-row' : ''}" data-id="${r._id}">
             <td>
               <div style="font-weight:500">${type.icon} ${type.label}</div>
               ${r.description ? `<div style="font-size:11px;color:var(--text3);margin-top:2px">${r.description.slice(0,50)}${r.description.length>50?'...':''}</div>` : ''}
-            </td>
+             </td>
             <td><span style="font-size:13px">📍 ${r.zone}</span></td>
             <td><span class="badge ${priority.class}">${priority.label}</span></td>
             <td><span class="badge ${status.class}">${status.label}</span></td>
-            <td><span style="font-weight:600">${r.votes}</span></td>
+            <td>
+              <div class="vote-stats">
+                <span class="vote-agree">✅ ${agreeVotes}</span>
+                <span class="vote-disagree">❌ ${disagreeVotes}</span>
+              </div>
+            </td>
+            <td>
+              <div style="font-size:12px;font-weight:500">${confidence}%</div>
+              <div class="confidence-bar">
+                <div class="confidence-fill ${confidenceClass}" style="width: ${confidence}%"></div>
+              </div>
+            </td>
             <td style="color:var(--text3)">${timeAgo(r.createdAt)}</td>
             <td>
               <div class="action-btns">
-               ${r.status !== 'resolved' ? `
-               <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')">✅</button>
-               <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')">🚨</button>
-               <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')">📢</button>
-               ` : `<span style="color:var(--text3);font-size:12px">—</span>`}
-               <button class="btn btn-sm" style="background:#ff2d55;color:white;padding:4px 8px" onclick="deleteReport('${r._id}')">🗑️</button>
+                ${r.status !== 'resolved' ? `
+                  <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')" title="Resolve">✅</button>
+                  <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')" title="Escalate">🚨</button>
+                  <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')" title="Add Update">📢</button>
+                ` : ''}
+                ${isFlagged ? `<button class="btn btn-sm btn-warning" onclick="clearFlag('${r._id}')" title="Clear Flag">🚩 Clear</button>` : ''}
+                <button class="btn btn-sm" style="background:#ff2d55;color:white;padding:4px 8px" onclick="deleteReport('${r._id}')" title="Delete">🗑️</button>
               </div>
             </td>
           </tr>
@@ -271,7 +326,7 @@
         }
       } catch (e) {
         document.getElementById('adminTableBody').innerHTML =
-          `<tr><td colspan="7" style="text-align:center;padding:32px;color:var(--text3)">Backend not connected. Start the server to manage reports.</td></tr>`;
+          `<tr><td colspan="8" style="text-align:center;padding:32px;color:var(--text3)">Backend not connected. Start the server to manage reports.</td></tr>`;
       }
     }
 
@@ -280,7 +335,7 @@
       document.getElementById('aActive').textContent = allReports.filter(r => r.status === 'active' || r.status === 'verified').length;
       document.getElementById('aEscalated').textContent = allReports.filter(r => r.status === 'escalated').length;
       document.getElementById('aResolved').textContent = allReports.filter(r => r.status === 'resolved').length;
-      document.getElementById('aCritical').textContent = allReports.filter(r => r.priority === 'critical' || r.priority === 'high').length;
+      document.getElementById('aFlagged').textContent = allReports.filter(r => r.isFlagged === true).length;
     }
 
     async function updateStatus(id, status) {
@@ -297,6 +352,24 @@
         }
       } catch (e) {
         showToast('Error updating report', 'error');
+      }
+    }
+
+    async function clearFlag(id) {
+      try {
+        const res = await fetch(`/api/reports/${id}/clear-flag`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await res.json();
+        if (data.success) {
+          showToast('Flag cleared from report', 'success');
+          await loadReports();
+        } else {
+          showToast(data.error || 'Failed to clear flag', 'error');
+        }
+      } catch (e) {
+        showToast('Error clearing flag', 'error');
       }
     }
 
@@ -332,6 +405,7 @@
     function closeUpdateModal() {
       document.getElementById('updateModal').classList.remove('open');
     }
+    
     async function deleteReport(id) {
       if (!confirm('Delete this report permanently?')) return;
       try {
@@ -340,13 +414,16 @@
         });
         const data = await res.json();
         if (data.success) {
-         showToast('Report deleted!', 'success');
-         await loadReports();
+          showToast('Report deleted!', 'success');
+          await loadReports();
         }
       } catch (e) {
         showToast('Error deleting report', 'error');
-        }
+      }
     }
+    
+    // Add clearFlag to window object so it's accessible from HTML
+    window.clearFlag = clearFlag;
     
     loadReports();
     setInterval(loadReports, 30000);

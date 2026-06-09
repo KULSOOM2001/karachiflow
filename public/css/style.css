@@ -249,6 +249,8 @@ h1 .blue { color: var(--blue); }
 .btn-danger:hover { background: #ff4d6d; }
 .btn-success { background: var(--green); color: #0a0a0f; }
 .btn-success:hover { background: var(--green2); }
+.btn-warning { background: #ff9800; color: white; }
+.btn-warning:hover { background: #f57c00; }
 
 /* ============ STATS BAR ============ */
 .stats-bar {
@@ -330,6 +332,14 @@ h1 .blue { color: var(--blue); }
 .report-card.medium::before { background: var(--medium); }
 .report-card.low::before { background: var(--low); }
 .report-card.resolved::before { background: var(--text3); }
+
+/* Flagged report styles */
+.report-card.flagged {
+  border-left: 4px solid #ff6b6b;
+  background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 255, 255, 0) 100%);
+  border-color: rgba(255,45,85,0.3);
+  opacity: 0.85;
+}
 
 .report-card:hover {
   border-color: var(--border2);
@@ -421,6 +431,12 @@ h1 .blue { color: var(--blue); }
   color: var(--text3);
 }
 
+.disagree-count {
+  margin-left: 12px;
+  color: #ff6b6b;
+  font-weight: 500;
+}
+
 /* ============ VOTE BUTTON ============ */
 .vote-btn {
   display: flex;
@@ -437,7 +453,7 @@ h1 .blue { color: var(--blue); }
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.vote-btn:hover {
+.vote-btn:hover:not(:disabled) {
   background: rgba(255,77,46,0.1);
   border-color: rgba(255,77,46,0.3);
   color: var(--accent2);
@@ -451,9 +467,64 @@ h1 .blue { color: var(--blue); }
   animation: voteBounce 0.4s ease;
 }
 
+.vote-btn:disabled,
+.disagree-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
 @keyframes voteBounce {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.15); }
+}
+
+/* ============ DISAGREE BUTTON ============ */
+.disagree-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--surface2);
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  padding: 7px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 13px;
+  font-family: var(--font-body);
+  transition: all 0.3s ease;
+}
+
+.disagree-btn:hover:not(:disabled) {
+  background: rgba(255,45,85,0.1);
+  border-color: rgba(255,45,85,0.3);
+  color: var(--critical);
+}
+
+.disagree-btn.disagreed {
+  background: rgba(255,45,85,0.1);
+  border-color: rgba(255,45,85,0.3);
+  color: var(--critical);
+}
+
+/* ============ FLAGGED BANNER ============ */
+.flagged-banner {
+  background: rgba(255,45,85,0.1);
+  border: 1px solid rgba(255,45,85,0.2);
+  color: var(--critical);
+  padding: 8px 12px;
+  border-radius: 6px;
+  margin-bottom: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.flagged-banner::before {
+  content: "⚠️";
+  font-size: 14px;
 }
 
 /* ============ ZONE GRID ============ */
@@ -691,6 +762,7 @@ select option { background: var(--bg3); }
 
 .toast.success { border-color: rgba(61,220,132,0.3); }
 .toast.error { border-color: rgba(255,45,85,0.3); }
+.toast.info { border-color: rgba(77,143,255,0.3); }
 
 @keyframes slideInRight {
   from { transform: translateX(100%); opacity: 0; }

@@ -128,6 +128,66 @@ function markVoted(reportId) {
   sessionStorage.setItem('kf_voted', JSON.stringify(voted));
 }
 
+function hasDisagreed(reportId) {
+  const disagreed = JSON.parse(sessionStorage.getItem('kf_disagreed') || '[]');
+  return disagreed.includes(reportId);
+}
+
+function markDisagreed(reportId) {
+  const disagreed = JSON.parse(sessionStorage.getItem('kf_disagreed') || '[]');
+  disagreed.push(reportId);
+  sessionStorage.setItem('kf_disagreed', JSON.stringify(disagreed));
+}
+
+async function disagree(reportId, btn) {
+  // Check if already disagreed
+  if (hasDisagreed(reportId)) return;
+  
+  // Check if already voted agree
+  if (hasVoted(reportId)) {
+    showToast('You already confirmed this issue', 'error');
+    return;
+  }
+  
+  try {
+    const res = await fetch(`/api/reports/${reportId}/disagree`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ voterId: getVoterId() })
+    });
+    
+    const data = await res.json();
+    
+    if (data.success) {
+      markDisagreed(reportId);
+      btn.classList.add('disagreed');
+      btn.disabled = true;
+      btn.innerHTML = '❌ Disagreed';
+      
+      const card = btn.closest('.report-card');
+      
+      // Disable vote button in same card
+      const voteBtn = card.querySelector('.vote-btn');
+      if (voteBtn) {
+        voteBtn.disabled = true;
+      }
+      
+      const disagreeCount = card.querySelector('.disagree-count');
+      if (disagreeCount) {
+        disagreeCount.textContent = `❌ ${data.disagreeVotes}`;
+      }
+      
+      if (data.isFlagged) {
+        showToast('Report flagged as potentially fake!', 'error');
+      } else {
+        showToast('Your feedback recorded. Thank you!', 'info');
+      }
+    }
+  } catch (e) {
+    showToast('Error recording feedback', 'error');
+  }
+}
+
 function showToast(msg, type = 'info') {
   const existing = document.querySelector('.toast');
   if (existing) existing.remove();
@@ -180,10 +240,13 @@ function renderReportCard(r, showAdminControls = false) {
   const priority = PRIORITY_LABELS[r.priority] || PRIORITY_LABELS.low;
   const status = STATUS_LABELS[r.status] || STATUS_LABELS.active;
   const voted = hasVoted(r._id);
+  const disagreed = hasDisagreed(r._id);
   const sev = severityClass(r.votes);
 
   return `
-    <div class="report-card ${sev}" data-id="${r._id}">
+    <div class="report-card ${sev} ${r.isFlagged ? 'flagged' : ''}" data-id="${r._id}">
+      ${r.isFlagged ? '<div class="flagged-banner">⚠️ Flagged as potentially fake</div>' : ''}
+      
       <div class="report-header">
         <div style="display:flex;gap:12px;align-items:flex-start;flex:1">
           <div class="report-type-icon type-${r.type.split('_')[0]}">
@@ -199,32 +262,55 @@ function renderReportCard(r, showAdminControls = false) {
           <span class="badge ${status.class}">${status.label}</span>
         </div>
       </div>
+      
       ${r.description ? `<div class="report-desc">${r.description}</div>` : ''}
       ${r.officialUpdate ? `<div class="official-update">🏛️ Official: ${r.officialUpdate}</div>` : ''}
       ${r.estimatedResolution ? `<div class="official-update" style="margin-top:6px">⏱️ ETA: ${r.estimatedResolution}</div>` : ''}
+      
       <div class="report-footer">
         <div class="report-meta">
           <span>👤 ${r.reporterName || 'Anonymous'}</span>
           <span>🔥 ${r.votes} confirmed</span>
+          <span class="disagree-count">❌ ${r.disagreeVotes || 0}</span>
         </div>
-        ${r.status !== 'resolved' ? `
-          <button class="vote-btn ${voted ? 'voted' : ''}" onclick="vote('${r._id}', this)" ${voted ? 'disabled' : ''}>
-            ${voted ? '✅' : '👆'} ${voted ? 'Confirmed' : 'I\'m affected'}
-          </button>
-        ` : `<span class="badge badge-resolved">✅ Resolved</span>`}
+        
+        <div style="display:flex;gap:8px">
+          ${r.status !== 'resolved' ? `
+            <button class="vote-btn ${voted ? 'voted' : ''}" 
+              onclick="vote('${r._id}', this)" ${voted || disagreed ? 'disabled' : ''}>
+              ${voted ? '✅ Confirmed' : '👆 I\'m affected'}
+            </button>
+            
+            <button class="disagree-btn ${disagreed ? 'disagreed' : ''}" 
+              onclick="disagree('${r._id}', this)" ${voted || disagreed ? 'disabled' : ''}>
+              ${disagreed ? '❌ Disagreed' : '👎 Not affected'}
+            </button>
+          ` : `<span class="badge badge-resolved">✅ Resolved</span>`}
+        </div>
       </div>
+      
       ${showAdminControls ? `
         <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;gap:8px;flex-wrap:wrap">
           <button class="btn btn-sm btn-success" onclick="updateStatus('${r._id}', 'resolved')">✅ Resolve</button>
           <button class="btn btn-sm btn-danger" onclick="updateStatus('${r._id}', 'escalated')">🚨 Escalate</button>
           <button class="btn btn-sm btn-secondary" onclick="addOfficialUpdate('${r._id}')">📢 Add Update</button>
+          ${r.isFlagged ? `<button class="btn btn-sm btn-warning" onclick="clearFlag('${r._id}')">🚩 Clear Flag</button>` : ''}
         </div>
       ` : ''}
     </div>`;
 }
 
+// ✅ UPDATED vote() function with disagree check
 async function vote(reportId, btn) {
+  // Check if already voted
   if (hasVoted(reportId)) return;
+  
+  // ✅ Check if already disagreed
+  if (hasDisagreed(reportId)) {
+    showToast('You already marked this as not affected', 'error');
+    return;
+  }
+  
   try {
     const res = await fetch(`/api/reports/${reportId}/vote`, {
       method: 'PATCH',
@@ -237,7 +323,15 @@ async function vote(reportId, btn) {
       btn.classList.add('voted');
       btn.disabled = true;
       btn.innerHTML = '✅ Confirmed';
+      
       const card = btn.closest('.report-card');
+      
+      // ✅ Disable disagree button in same card
+      const disagreeBtn = card.querySelector('.disagree-btn');
+      if (disagreeBtn) {
+        disagreeBtn.disabled = true;
+      }
+      
       const voteCount = card.querySelector('.report-meta span:nth-child(2)');
       if (voteCount) voteCount.textContent = `🔥 ${data.votes} confirmed`;
       showToast('Issue confirmed! Thank you.', 'success');

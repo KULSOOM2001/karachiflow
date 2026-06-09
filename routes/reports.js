@@ -70,19 +70,63 @@ router.post('/', async (req, res) => {
   }
 });
 
-// PATCH vote on a report
+// ✅ UPDATED vote route with disagree check
 router.patch('/:id/vote', validateId, async (req, res) => {
   try {
     const { voterId } = req.body;
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ success: false, error: 'Not found' });
+    
+    // Check if already voted (agree)
     if (report.voters.includes(voterId)) {
       return res.status(400).json({ success: false, error: 'Already voted' });
     }
+    
+    // ✅ ADD THIS - Check if already disagreed
+    if (report.disagreeVoters && report.disagreeVoters.includes(voterId)) {
+      return res.status(400).json({ success: false, error: 'Already disagreed with this report' });
+    }
+    
     report.voters.push(voterId);
     report.votes += 1;
     await report.save();
     res.json({ success: true, votes: report.votes, priority: report.priority, status: report.status });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
+// PATCH disagree on a report
+router.patch('/:id/disagree', validateId, async (req, res) => {
+  try {
+    const { voterId } = req.body;
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) return res.status(404).json({ success: false, error: 'Not found' });
+    
+    // Check if already disagreed
+    if (report.disagreeVoters && report.disagreeVoters.includes(voterId)) {
+      return res.status(400).json({ success: false, error: 'Already disagreed' });
+    }
+    
+    // Check if already voted agree (same person can't do both)
+    if (report.voters.includes(voterId)) {
+      return res.status(400).json({ success: false, error: 'Already confirmed this issue' });
+    }
+    
+    // Initialize arrays if they don't exist (for backward compatibility)
+    if (!report.disagreeVoters) report.disagreeVoters = [];
+    if (typeof report.disagreeVotes === 'undefined') report.disagreeVotes = 0;
+    
+    report.disagreeVoters.push(voterId);
+    report.disagreeVotes += 1;
+    await report.save();  // pre-save hook will check for flagging
+    
+    res.json({ 
+      success: true, 
+      disagreeVotes: report.disagreeVotes,
+      isFlagged: report.isFlagged || false
+    });
   } catch (e) {
     res.status(500).json({ success: false, error: e.message });
   }
@@ -95,7 +139,7 @@ router.patch('/:id/status', validateId, async (req, res) => {
     const update = { status, updatedAt: new Date() };
     if (officialUpdate) update.officialUpdate = officialUpdate;
     if (estimatedResolution) update.estimatedResolution = estimatedResolution;
-    if (priority) update.priority = priority;  // ✅ ADD THIS LINE
+    if (priority) update.priority = priority;
     const report = await Report.findByIdAndUpdate(req.params.id, update, { new: true });
     if (!report) return res.status(404).json({ success: false, error: 'Not found' });
     res.json({ success: true, report });
@@ -114,6 +158,21 @@ router.get('/admin/all', async (req, res) => {
   }
 });
 
+// ✅ ADD THIS - PATCH clear flag on report
+router.patch('/:id/clear-flag', validateId, async (req, res) => {
+  try {
+    const report = await Report.findByIdAndUpdate(
+      req.params.id,
+      { isFlagged: false, flaggedAt: null },
+      { new: true }
+    );
+    if (!report) return res.status(404).json({ success: false, error: 'Not found' });
+    res.json({ success: true, report });
+  } catch (e) {
+    res.status(500).json({ success: false, error: e.message });
+  }
+});
+
 // DELETE report
 router.delete('/:id', async (req, res) => {
   try {
@@ -124,4 +183,5 @@ router.delete('/:id', async (req, res) => {
     res.status(500).json({ success: false, error: e.message });
   }
 });
+
 module.exports = router;
